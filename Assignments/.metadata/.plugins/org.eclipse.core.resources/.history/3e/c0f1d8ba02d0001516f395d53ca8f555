@@ -1,0 +1,272 @@
+package edu.uab.cis.search.maze;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.PriorityQueue;
+import java.util.Set;
+
+import com.google.common.collect.Sets;
+
+/**
+ * Solves a maze using A* search with an L1 heuristic.
+ * 
+ * Specifically, squares are explored with the following strategy:
+ * <ul>
+ * <li>Squares are ordered for exploration using the score f(x) = g(x) + h(x),
+ * with the smallest f(x) squares being explored first</li>
+ * <li>g(x) is the length of the path so far, from the start square to the
+ * current square, including the steps necessary to avoid obstacles</li>
+ * <li>h(x) is the L1 estimate of the path to the goal, that is, the Manhattan
+ * distance to the goal, ignoring potential obstacles</li>
+ * <li>Squares with the same f(x) score are ordered by the h(x) score, with
+ * smaller h(x) scores first</li>
+ * <li>Squares with the same f(x) and h(x) scores are ordered by row, with
+ * smaller rows first</li>
+ * <li>Squares with the same f(x), h(x) and row should be ordered by column,
+ * with smaller columns first</li>
+ * </ul>
+ */
+public class Solver
+{
+
+	private Set<SNode> explored = Sets.<SNode> newHashSet();
+	private List<SNode> path = new ArrayList<SNode>();
+	private Maze maze;
+	private Square goal;
+	private SNode start;
+	PriorityQueue<SNode> que = new PriorityQueue<SNode>();
+
+	/**
+	 * Solves the given maze, determining the path to the goal.
+	 * 
+	 * @param maze
+	 *           The maze to be solved.
+	 */
+	public Solver(Maze maze)
+	{
+		this.maze = maze;
+		goal = maze.getGoal();
+		start = new SNode(maze.getStart(), goal);
+		SNode s = null;
+		que.add(start);
+		
+		while ((s = que.poll()) != null)
+		{
+			if(!s.equals(goal))
+				expand(s);
+			else
+			{
+				explored.add(s);
+				getPath(s);
+				break;
+			}
+		}
+	}
+	
+	private void expand(SNode s)
+	{
+		explored.add(s);
+		
+		SNode[] a = {
+				new SNode(s.getRow() - 1, s.getColumn(), s, goal),
+				new SNode(s.getRow() + 1, s.getColumn(), s, goal),
+				new SNode(s.getRow(), s.getColumn() + 1, s, goal),
+				new SNode(s.getRow(), s.getColumn() - 1, s, goal)
+		};
+		
+		for(SNode x : a)
+		{
+			if(!que.contains(x) && !explored.contains(x) && !maze.isBlocked(x))
+				que.add(x);
+		}
+	}
+	
+	private void getPath(SNode s)
+	{
+		path.add(s);
+		
+		while(s.getParent() != null)
+		{
+			s = s.getParent();
+			path.add(0, s);
+		}
+	}
+	
+	public void printPath()
+	{
+		Iterator<SNode> iter = path.iterator();
+		
+		System.out.println("Path:");
+		while(iter.hasNext())
+		{
+			System.out.println(iter.next().toStringExpanded());
+		}
+	}
+
+	/**
+	 * @return The squares along the path from the start to the goal, including
+	 *         both the start square and the goal square.
+	 */
+	public List<SNode> getPathFromStartToGoal()
+	{
+		return this.path;
+	}
+
+	/**
+	 * @return All squares that were explored during the search process. This is
+	 *         always a superset of the squares returned by
+	 *         {@link #getPathFromStartToGoal()}.
+	 */
+	public Set<SNode> getExploredSquares()
+	{
+		return this.explored;
+	}
+
+	
+	/**
+	 * This extends the Square class adding f(x), g(x), h(h) and a parent reference.
+	 */
+	public class SNode extends Square implements Comparable<SNode>
+	{
+		private static final int STEP = 1;
+		private int fx = 0;
+		private int gx = 0;
+		private int hx = 0;
+		private SNode parent = null;
+		
+		/**
+		 * Constructor that is used for the start node in the maze.
+		 */
+		public SNode(Square start, Square goal)
+		{
+			super(start.getRow(), start.getColumn());
+			calcHx(goal);
+			calcFx();
+		}
+		
+		public SNode getParent()
+		{
+			return parent;
+		}
+
+		/**
+		 * Constructor that is used for the square nodes other than the start node.
+		 */
+		public SNode(int row, int column, SNode prnt, Square goal)
+		{
+			super(row, column);
+			parent = prnt;
+			calcGx();
+			calcHx(goal);
+			calcFx();
+		}
+		
+		public void calcGx()
+		{
+			gx = parent.getGx() + STEP;
+		}
+		
+		public int getGx()
+		{
+			return gx;
+		}
+
+		public void calcHx(Square goal)
+		{
+			hx = Math.abs(goal.getRow() - getRow()) + Math.abs(goal.getColumn() - getColumn());
+		}
+		
+		public int getHx()
+		{
+			return hx;
+		}
+		
+		public void calcFx()
+		{
+			fx = gx + hx;
+		}
+		
+		public int getFx()
+		{
+			return fx;
+		}
+		
+		public String toStringExpanded()
+		{
+			return "Row: " + getRow() + ", Col: " + getColumn() + ", F(x): " + getFx() + ", G(x): " + getGx() + ", H(x): " + getHx();
+		}
+
+		@Override
+		public int compareTo(SNode y)
+		{
+			if(getFx() < y.getFx()) return -1;
+			if(getFx() > y.getFx()) return 1;
+			
+			if(getHx() < y.getHx()) return -1;
+			if(getHx() > y.getHx()) return 1;
+			
+			if(getRow() < y.getRow()) return -1;
+			if(getRow() > y.getRow()) return 1;
+			
+			if(getColumn() < y.getColumn()) return -1;
+			if(getColumn() > y.getColumn()) return 1;
+			
+			return 0;
+		}
+	}
+	
+	
+	// main is used for testing purposes only
+	public static void main(String[] args)
+	{
+		Square start = new Square(1,1);
+		Square goal = new Square(4,5);
+		Set<Square> obstacles = Sets.newHashSet(new Square(1, 3), new Square(2, 2));
+		Maze maze = new Maze(10, 10, start, goal, obstacles);
+		Solver solver = new Solver(maze);
+		Solver.SNode startNode = solver.new SNode(start, goal);
+		Solver.SNode n1 = solver.new SNode(0, 0, startNode, goal);
+		Solver.SNode n2 = solver.new SNode(1, 0, startNode, goal);
+		Solver.SNode n3 = solver.new SNode(2, 0, n2, goal);
+		Solver.SNode n4 = solver.new SNode(3, 0, n2, goal);
+		Solver.SNode n5 = solver.new SNode(2, 1, n3, goal);
+		Solver.SNode n6 = solver.new SNode(4, 0, n4, goal);
+		
+		System.out.println("Start: " + startNode.toString());
+		System.out.println("n1: " + n1.toString());
+		System.out.println("n2: " + n2.toString());
+		System.out.println("n3: " + n3.toString());
+		System.out.println("n4: " + n4.toString());
+		System.out.println("n5: " + n5.toString());
+		System.out.println("n6: " + n6.toString());
+		
+		System.out.println(startNode.compareTo(n1));
+		System.out.println(startNode.compareTo(n2));
+		System.out.println(startNode.compareTo(n3));
+		System.out.println(n2.compareTo(n3));
+		
+		PriorityQueue<SNode> q = new PriorityQueue<SNode>();
+		q.add(n4);
+		q.add(n2);
+		q.add(n6);
+		q.add(n1);
+		q.add(startNode);
+		q.add(n3);
+		
+		while(!q.isEmpty())
+		{
+			System.out.println(q.poll());
+		}
+		
+		Solver.SNode n7 = solver.new SNode(1, 3, n4, goal);
+		System.out.println(maze.isBlocked(n1));
+		System.out.println(maze.isBlocked(n7));
+		
+		Solver.SNode g = solver.new SNode(4, 5, n4, goal);
+		System.out.println("g: " + g.toString());
+//		System.out.println(g.compareTo(goal));
+		System.out.println(g.equals(goal));
+	}
+}
+

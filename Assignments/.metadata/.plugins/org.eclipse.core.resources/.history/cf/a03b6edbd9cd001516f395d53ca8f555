@@ -1,0 +1,12 @@
+package edu.uab.cis.search.maze;
+
+public class TestingMaze
+{
+
+	public static void main(String[] args)
+	{
+		// TODO Auto-generated method stub
+
+	}
+
+}

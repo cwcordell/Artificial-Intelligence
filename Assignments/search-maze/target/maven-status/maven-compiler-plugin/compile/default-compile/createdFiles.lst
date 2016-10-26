@@ -1,0 +1,5 @@
+edu/uab/cis/search/maze/Square.class
+edu/uab/cis/search/maze/TestingMaze.class
+edu/uab/cis/search/maze/Solver$SNode.class
+edu/uab/cis/search/maze/Solver.class
+edu/uab/cis/search/maze/Maze.class

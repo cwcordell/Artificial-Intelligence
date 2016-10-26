@@ -1,0 +1,26 @@
+package edu.uab.cis.search.maze;
+
+import java.util.Set;
+
+import com.google.common.collect.Sets;
+
+public class TestingMaze
+{
+
+	public static void main(String[] args)
+	{
+		// test 1
+		Maze maze = new Maze(2, 13, new Square(0, 0), new Square(0, 12), Sets.<Square> newHashSet());
+		System.out.println(maze.toString());
+		
+		// test 2
+		Set<Square> obstacles = Sets.newHashSet(new Square(1, 1), new Square(2, 2));
+	   maze = new Maze(3, 4, new Square(2, 0), new Square(1, 3), obstacles);
+		System.out.println(maze.toString());
+		
+		// test 2
+		obstacles = Sets.newHashSet(new Square(1, 1), new Square(2, 2));
+	   maze = new Maze(3, 4, new Square(2, 0), new Square(1, 3), obstacles);
+		System.out.println(maze.toString());
+	}
+}
